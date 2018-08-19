@@ -32,6 +32,7 @@ export default class HeaderTemplate extends React.Component{
 	}
 	render(){
 		return (
+
 			<Header style={{backgroundColor: '#74b9ff'}}>
 			  <Left>
 			    <Button transparent>

@@ -3,7 +3,7 @@ import React from 'react';
 import {Image,AsyncStorage,AppRegistry,View} from 'react-native';
 import {Button,
 		Card,
-		CardItems,
+		CardItem,
 		Tab,
 		Tabs,
 		TabHeading,
@@ -12,8 +12,11 @@ import {Button,
 		Text,
 		List,
 		Header,
+		Input,
 		ListItem,
 		Left,
+		Label,
+		Item,
 		Body,
 		Radio,
 		Separator,
@@ -30,15 +33,29 @@ export default class Cart extends React.Component {
 	constructor(props) {
 	  super(props);
 	
-	  this.state = {data:null,isLoading:false,selected: 'key1',itemSelected:'',active: false,storeData:null,storeDataParse:null};
+	  this.state = {data:null,
+	  isLoading:false,
+	  selected: 'key1',
+	  selectedProv:9,
+	  selectedKabKot:'',
+	  kabkota:null,
+	  dataCost:null,
+	  provinsi:null,
+	  itemSelected:'',
+	  active: false,
+	  dataTypeCourier:'',
+	  storeData:null,
+	  storeDataParse:null};
 	}
 	componentWillMount(){
-		AsyncStorage.getItem('staticCart',(err,res) => {
-			console.log("=====--------Static Cart-------=====")
+		AsyncStorage.getItem('cart',(err,res) => {
 			if (res) {	
+				// console.log("=======++++++======")
+				// console.log(res);
 				this.setState({storeData:res})
 			}
 		})		
+
 	}
 	componentDidMount(){
 		var self = this;
@@ -48,10 +65,20 @@ export default class Cart extends React.Component {
 				self.setState({isLoading:true});
 			}else{
 				var json = JSON.parse(res);
-				// console.log(json);
+				var sum = 0;
+				console.log("=======++++++======")
+				console.log(json);
 				self.setState({data:JSON.parse(res),isLoading:true});
+				
+				json.map((item,err) => {
+					sum +=item.price;
+					console.log(item.price)
+				})
+				console.log(sum);
 			}
 		});
+		// console.log("+++=====++++====++++====++++=====")
+		this.fetchallProvinsi();
 	}
 	onValueChange(value: string) {
 	this.setState({
@@ -59,6 +86,110 @@ export default class Cart extends React.Component {
 	});
 	// console.log(value);	
 	// this.tampilanShipment(value);
+	}
+
+	fetchallProvinsi(){
+		return fetch('http://192.168.43.220:8080/demo/allprovinsi')
+		.then((response) => response.json())
+		.then((data) => {
+			this.setState({provinsi:data.rajaongkir.results,isLoading:true});
+			// console.log("=======Provinsi======")
+			// console.log(data.rajaongkir.results);
+		}).catch((error) => {
+			console.log(error);
+		})
+	}
+	fetchkabkota(key: string){
+		this.setState({selectedProv:key});
+		return fetch('http://192.168.43.220:8080/demo/kabkota?id='+key).then((response) => response.json())
+		.then((data) => {
+			this.setState({kabkota:data.rajaongkir.results})
+			// console.log(data.rajaongkir.results)
+		}).catch((error) => {
+			console.log(error)
+		})
+	}
+	forKabKota(){
+		if (this.state.kabkota == null) {
+			return (
+				<List>
+					<ListItem><Text>Pilih Provinsi Terlebih dahulu</Text></ListItem> 
+				</List>
+			)
+		}else{
+			let din = this.state.kabkota.map((item,key) => {
+
+				return (
+					<Picker.Item key={key} value={item.city_id} label={item.city_name} />
+				)
+			})
+
+			return(
+				<Picker
+					mode="dropdown"
+					style={{width: undefined}}
+					placeholder="Provinsi"
+					placeholderStyle={{ color: "#bfc6ea" }}
+					placeholderIconColor="#007aff"
+					selectedValue={this.state.selectedKabKot}
+					onValueChange={this.getForCost.bind(this)}
+					>
+					{din}
+				</Picker>
+			)
+
+		}
+	}
+	getForCost(key: string){
+		this.setState({selectedKabKot:key})
+		return fetch('http://192.168.43.220:8080/demo/getcost?city_id=23&destination='+key+'&provinsi_id=9').then((response) => response.json())
+		.then((data) => {
+			let dat = [];
+			this.setState({dataCost:data.rajaongkir.results,dataTypeCourier:data.rajaongkir.results.code})
+				console.log(data.rajaongkir.results[0].costs)
+		}).catch((error) => {
+			console.log(error)
+		})
+
+	}
+	templateCosts(){
+		if (this.state.dataCost == null) {
+			return (
+				<List>
+					<ListItem><Text>Pilih Kabupaten/Kota !!!</Text></ListItem>
+				</List>
+			)
+		}else{
+
+			let costs = this.state.dataCost.map((item,key) => {
+				console.log("========key========")
+				console.log(key);
+				for (var i = 0; i < Object.keys(item.costs).length; i++) {
+				return (
+					<ListItem key={i}>
+			            <Left>
+			              <Text>{item.costs[i]['service']}</Text>
+			            </Left>
+			            	<Text>Rp.{item.costs[i].cost[0].value}</Text>
+			            <Right>
+			              <Radio
+			                color={"#f0ad4e"}
+			                selectedColor={"#5cb85c"}
+			                // onPress={() => console.log(item.service)}
+			                // selected={this.state.itemSelected == 'ss'}
+			              />
+			            </Right>
+			        </ListItem>
+				)
+				}
+			})
+			return (
+				<List>
+	        	{costs}
+	        	</List>  
+			)
+
+		}
 	}
 	async hapusItem(param){
 		var self = this;
@@ -183,7 +314,40 @@ export default class Cart extends React.Component {
 					)
 			}else if(shipment == 'key1'){
 				return(
-					<Text>{shipment}</Text>
+					<Content>
+			          <ListItem>
+			            <Left>
+			              <Text>POS Express</Text>
+			            </Left>
+						<Text>Rp.32100</Text>
+			            <Right>
+			              <Radio
+			                color={"#f0ad4e"}
+			                selectedColor={"#5cb85c"}
+			                onPress={() => this.setState({itemSelected:'ss'})}
+			                selected={this.state.itemSelected == 'ss'}
+			              />
+			            </Right>
+			          </ListItem>
+					 <ListItem >
+			            <Left>
+			              <Text>POS Kilat</Text>
+			            </Left>
+						<Text>Rp.21000</Text>
+			            <Right>
+			              <Radio
+			                color={"#f0ad4e"}
+			                selectedColor={"#5cb85c"}
+			                onPress={() => this.setState({itemSelected:'yes'})}
+			                selected={this.state.itemSelected == 'yes'}
+			              />
+			            </Right>
+			          </ListItem>
+			          </Content>
+				)
+			}else{
+				return(
+					<Text>Ini Paket TIKI</Text>
 				)
 			}
 		}
@@ -278,6 +442,38 @@ export default class Cart extends React.Component {
 	  	}
 	  	AsyncStorage.removeItem('user');	
 	  }
+
+	forProv(){
+
+		if (this.state.provinsi == null) {
+			return (
+				<List>
+				<ListItem>
+				<Text>Tidak Ada data</Text>
+				</ListItem>
+				</List>
+			)
+		}else{
+			let data = this.state.provinsi.map((item,key) =>  {
+					return (
+		              <Picker.Item key={key} label={item.province} value={item.province_id} />
+		            )
+			})
+			return(
+				<Picker
+					mode="dropdown"
+					style={{width: undefined}}
+					placeholder="Provinsi"
+					placeholderStyle={{ color: "#bfc6ea" }}
+					placeholderIconColor="#007aff"
+					selectedValue={this.state.selectedProv}
+					onValueChange={this.fetchkabkota.bind(this)}
+					>
+					{data}
+				</Picker>
+			)
+		}
+	}
 	render(){
 		if (this.state.isLoading) {
 		return(
@@ -292,7 +488,6 @@ export default class Cart extends React.Component {
 						<Text style={{fontSize: 24,color: 'white'}}>Check Out</Text>
 					</Body>
 				</Header>
-
 				<Content>
 					<Tabs>
 						<Tab heading={ <TabHeading><Icon name="md-cart" style={{fontSize: 24,color:'white'}}/><Text> Cart</Text></TabHeading>}>
@@ -317,22 +512,23 @@ export default class Cart extends React.Component {
 						</Tab>
 						<Tab heading={ <TabHeading><Icon name="md-boat" style={{fontSize: 24,color:'white'}}/><Text> Shipment</Text></TabHeading>}>
 							<Form>
-					            <Picker
-					              mode="dropdown"
-					              iosHeader="Select Courier"
-					              iosIcon={<Icon name="ios-arrow-down-outline" />}
-					              style={{ width: undefined }}
-					              selectedValue={this.state.selected}
-					              onValueChange={this.onValueChange.bind(this)}
-					            >
-					              <Picker.Item label="JNE" value="key0" />
-					              <Picker.Item label="POS" value="key1" />
-					              <Picker.Item label="TIKI" value="key2" />
-					            </Picker>
+								{this.forProv()}
+								{this.forKabKota()}
+								<Item inlineLabel>
+					              <Label>Alamat</Label>
+					              <Input />
+					            </Item>
+					            <Item inlineLabel last>
+					              <Label>Nomor HP</Label>
+					              <Input />
+					            </Item>
+
 					        </Form>
 					        {
-						        this.tampilanShipment()
+						        this.templateCosts()
 					        }
+
+
 						</Tab>
 						<Tab heading={<TabHeading><Icon name="md-cash" style={{fontSize: 24,color:'white'}}/><Text> Payment</Text></TabHeading>}>
 							<Text>Cart</Text>

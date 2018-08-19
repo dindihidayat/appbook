@@ -1,7 +1,7 @@
 import React from 'react';
 import { Font, AppLoading } from 'expo';
 import { StyleSheet, Text, View,Image,AsyncStorage } from 'react-native';
-import { createStackNavigator } from 'react-navigation';
+import { createStackNavigator,DrawerNavigator } from 'react-navigation';
 import { Container, Header,Footer,FooterTab, Badge,Left, Body, Right,Tab,Tabs, Button, Title, Thumbnail,Card, Content,CardItem} from 'native-base';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Product from './src/product/Product';
@@ -12,6 +12,7 @@ import Config from './src/WooCommerce/Config';
 import WooCommerceAPI from './src/WooCommerce/WooCommerceAPI';
 import Spinner from 'react-native-loading-overlay';
 import HeaderTemplate from './src/template/HeaderTemplate';
+import Sidebar from './Sidebar';
 class HomeScreen extends React.Component {
 
 constructor(props) {
@@ -53,9 +54,12 @@ constructor(props) {
         self.setState({countCart:Object.keys(json).length,param:res});
       }
     });
+
+    this.fetchDataApi();
   }
   componentDidMount(){
     var self = this;
+    this.fetchDataApi();
     AsyncStorage.getItem('cart',(err,res) => {
       if (!res) {
         console.log(err)
@@ -73,11 +77,30 @@ constructor(props) {
       per_page:10,
       page:1
     }).then(function(result){
-      console.log(result);
+      // console.log(result);
       self.setState({data:result,isLoading:true})
     }).catch((error) => {
       console.log(error)
     })
+  }
+
+  fetchDataApi(){
+   return fetch('http://10.18.103.131:8080/demo/getcost')
+      .then((response) => response.json())
+      .then((responseJson) => {
+        console.log("=====+++====")
+        console.log(responseJson.rajaongkir);
+        this.setState({
+          isLoading: false,
+          dataSource: responseJson.rajaongkir,
+        }, function(){
+
+        });
+
+      })
+      .catch((error) =>{
+        console.error(error);
+      });
   }
   loadData(){
       if (this.state.data == null) {
@@ -153,12 +176,14 @@ constructor(props) {
 
   }
 }
-const AppRoute = createStackNavigator({
-  Home : HomeScreen,
-  Product : Product,
-  Detail : Detail,
-  Cart : Cart,
-})
+const AppRoute = DrawerNavigator({
+  Home : {screen:HomeScreen},
+  Product : {screen:Product},
+  Detail : {screen:Detail},
+  Cart : {screen:Cart},
+},  {
+    contentComponent: props => <Sidebar {...props} />
+  })
 
 const styles = StyleSheet.create({
   container: {

@@ -85,74 +85,50 @@ export default class Product extends React.Component {
   			})
   			console.log("Data Tersimpan");
   		}else{
-  			var items = JSON.parse(cart);
-  			items.push(product);
-  			this.state.cartItems.map((item,i) => {
+  			
+  			var items = JSON.parse(cart)
+			let sesaat = this.state.cartItems
+			let qty = {qty:10}
+			let remove = {"image":data.image,"name":data.name}
+  			items.push(product)
 
- 				if (data.name == item.name) {
+			var isEqual = function(o1, o2) {
+			    return o1 === o2 || 
+			        (o1 != null && o2 != null && 
+			         o1.value === o2.value &&
+			         o1.label === o2.label);
+			};
 
+			var found = false;
+			var i;
+			for(i = 0; i < Object.keys(this.state.cartItems).length; ++i) {
+			    // if(isEqual(arr[i], remove)) {
+		    	if (sesaat[i].name == remove.name) {
+			        found = true;
 
-					var sesaat = this.state.cartItems;
-					// Store res into local storage (StaticCart)
+			        break;
+			    }else{
+			    	console.log("Tidak Sama !")
+			    }
+			}
 
+			if(found) {
+			    var forPush = {name:remove.name,image:remove.image,qty:20}
+			    sesaat.splice(i, 1);
+			    sesaat.push(forPush)
 
-					// Object to remove from arr
-					var remove = {"image":data.image,"name":data.name};
+			    AsyncStorage.setItem('cart',JSON.stringify(sesaat));
 
-					//Get again and store result to storeData,StoreDataParse 
-					// Function to determine if two objects are equal by comparing
-					// their value and label properties
-					var isEqual = function(o1, o2) {
-					    return o1 === o2 || 
-					        (o1 != null && o2 != null && 
-					         o1.value === o2.value &&
-					         o1.label === o2.label);
-					};
+			    console.log(sesaat);
+			    
+			}else{
+	  			AsyncStorage.setItem('cart',JSON.stringify(items));
+  				console.log("Belum Ada");
+			}
 
-					// Iterate through array and determine if remove is in arr
-					var found = false;
-					var i;
-					for(i = 0; i < Object.keys(sesaat).length; ++i) {
-				    	if (sesaat[i].name == remove.name) {
-					        found = true;
-					        AsyncStorage.removeItem('cart');
-					        break;
-					    }else{
-					    	console.log("Tidak Sama !");
-					    }
-					}
-
-					if(found) {
-					    // Found remove in arr, remove it
-					    sesaat.splice(i, 1);
-
-					    var qty = {qty:20};
-					    
-					    remove.push(qty);
-
-					    sesaat.push(remove);
-
-					    AsyncStorage.setItem('cart',JSON.stringify(sesaat));
-					    
-
-					    this.setState({data:sesaat});
-
-					    
-					}
-
-				// }
-
-  					
-  					var dat = item;
-  					console.log("Sudah Ada");
-  				}else{
-		  			AsyncStorage.setItem('cart',JSON.stringify(items));
-	  				console.log("Belum Ada");
-  				}
-  			});
   			AsyncStorage.getItem('cart',(err,res) => {
   				this.setState({countCart:Object.keys(JSON.parse(res)).length})
-  				console.log(Object.keys(JSON.parse(res)).length)
+  				// console.log(Object.keys(JSON.parse(res)).length)
   			})
   		}
   		ToastAndroid.showWithGravity('Barang Berhasil ditambahkan kedalam cart', 10,ToastAndroid.BOTTOM);
